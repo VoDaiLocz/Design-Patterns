@@ -114,6 +114,15 @@ Step 4: Thin routes.ts to HTTP-only controller
 | 🏗️ **Architecture** | Clean, Hexagonal, DDD, CQRS, Service Layer, Repository | `references/architecture-patterns.md` |
 | 🌐 **System** | Microservices, Event-Driven, Circuit Breaker, Saga, API Gateway | `references/system-patterns.md` |
 
+### Additional Capabilities (v1.1.0)
+
+| Capability | Reference |
+|------------|----------|
+| 🧪 **Testing Patterns** — How to test every pattern | `references/testing-patterns.md` |
+| 🚫 **Anti-Patterns Catalog** — 15 code smells with detection & cures | `references/anti-patterns.md` |
+| 🔄 **Migration Playbook** — 5 step-by-step refactoring guides | `references/migration-playbook.md` |
+| 📄 **Output Formats** — ADR, Health Check, Comparison Matrix | `references/output-format.md` |
+
 ### Framework-Specific Implementations
 
 | Framework | Architecture | Key Patterns |
@@ -166,10 +175,14 @@ commands/
 skills/design-patterns/
 ├── SKILL.md                 # Main skill — 4D Process, Iron Laws, scoring
 └── references/
-    ├── code-patterns.md     # 23 GoF + 5 SOLID with code examples
+    ├── code-patterns.md          # 23 GoF + 5 SOLID (all with code examples)
     ├── architecture-patterns.md  # Clean, Hexagonal, DDD, CQRS
-    ├── system-patterns.md   # Microservices, Event-Driven, Cloud
-    └── framework-catalog.md # Next.js, FastAPI, NestJS, Django, Express, Go
+    ├── system-patterns.md        # Microservices, Event-Driven, Cloud
+    ├── framework-catalog.md      # Next.js, FastAPI, NestJS, Django, Express, Go
+    ├── testing-patterns.md       # ✨ NEW — Unit/Integration/E2E test code
+    ├── anti-patterns.md          # ✨ NEW — 15 anti-patterns with detection
+    ├── migration-playbook.md     # ✨ NEW — 5 migration guides
+    └── output-format.md          # ✨ NEW — ADR, Reports, Health Check
 
 RELEASE-NOTES.md
 ```

@@ -190,11 +190,73 @@ const query = new QueryBuilder()
 
 **NEVER use for:** Services, controllers, or anything with business logic.
 
+**TypeScript Example:**
+```typescript
+// lib/prisma.ts — Legitimate Singleton (DB connection)
+import { PrismaClient } from "@prisma/client";
+
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
+
+export const prisma = globalForPrisma.prisma ?? new PrismaClient();
+
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+```
+
+**Python Example:**
+```python
+# config.py — Thread-safe Singleton
+import threading
+
+class AppConfig:
+    _instance = None
+    _lock = threading.Lock()
+
+    def __new__(cls):
+        if cls._instance is None:
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = super().__new__(cls)
+                    cls._instance._load()
+        return cls._instance
+
+    def _load(self):
+        self.db_url = os.getenv("DATABASE_URL")
+        self.secret = os.getenv("SECRET_KEY")
+```
+
 ### 5. Prototype
 
 **Problem:** Creating objects by cloning existing ones.
 
 **When to Use:** Deep copying complex objects, template-based creation.
+
+**TypeScript Example:**
+```typescript
+interface Cloneable<T> {
+  clone(): T;
+}
+
+class DashboardWidget implements Cloneable<DashboardWidget> {
+  constructor(
+    public title: string,
+    public config: Record<string, unknown>,
+    public filters: string[],
+  ) {}
+
+  clone(): DashboardWidget {
+    return new DashboardWidget(
+      this.title,
+      { ...this.config },         // Shallow copy config
+      [...this.filters],          // Copy array
+    );
+  }
+}
+
+// Usage: Create variants from a template
+const template = new DashboardWidget("Sales", { period: "30d" }, ["region"]);
+const clone = template.clone();
+clone.title = "Sales — APAC";    // Original unchanged
+```
 
 ---
 
@@ -205,6 +267,33 @@ const query = new QueryBuilder()
 **Problem:** Incompatible interfaces between two existing systems.
 
 **When to Use:** Wrapping third-party APIs, migrating from one library to another.
+
+**TypeScript Example:**
+```typescript
+// Old payment system
+class StripeGateway {
+  charge(cents: number, token: string) { /* Stripe API */ }
+}
+
+// New payment interface your app expects
+interface PaymentProcessor {
+  pay(amount: number, currency: string, method: string): Promise<Receipt>;
+}
+
+// Adapter: makes Stripe fit your interface
+class StripeAdapter implements PaymentProcessor {
+  constructor(private stripe: StripeGateway) {}
+
+  async pay(amount: number, currency: string, method: string): Promise<Receipt> {
+    const cents = Math.round(amount * 100); // Stripe uses cents
+    await this.stripe.charge(cents, method);
+    return { amount, currency, status: "paid" };
+  }
+}
+
+// Now swap Stripe for PayPal without changing app code:
+// class PayPalAdapter implements PaymentProcessor { ... }
+```
 
 ### 7. Decorator
 
@@ -243,17 +332,94 @@ function withRateLimit(limit: number, next: Middleware): Middleware {
 
 **When to Use:** Simplifying external API integrations, wrapping complex libraries.
 
+**TypeScript Example:**
+```typescript
+// Without Facade: Client must know 4 subsystems
+// const user = await prisma.user.create(...);
+// await stripe.createCustomer(user.email);
+// await sendgrid.send({ to: user.email, ... });
+// await analytics.track("signup", user.id);
+
+// With Facade: One call does everything
+class OnboardingFacade {
+  constructor(
+    private db: UserRepository,
+    private billing: BillingService,
+    private email: EmailService,
+    private analytics: AnalyticsService,
+  ) {}
+
+  async registerUser(data: RegisterDTO): Promise<User> {
+    const user = await this.db.create(data);
+    await this.billing.createCustomer(user);
+    await this.email.sendWelcome(user);
+    this.analytics.track("signup", { userId: user.id });
+    return user;
+  }
+}
+```
+
 ### 9. Proxy
 
 **Problem:** Need to control access to an object.
 
 **When to Use:** Lazy loading, access control, caching, logging.
 
+**TypeScript Example (Caching Proxy):**
+```typescript
+class CachingUserRepository implements UserRepository {
+  private cache = new Map<string, { user: User; expiry: number }>();
+
+  constructor(private real: UserRepository, private ttlMs = 60_000) {}
+
+  async findById(id: string): Promise<User | null> {
+    const cached = this.cache.get(id);
+    if (cached && cached.expiry > Date.now()) return cached.user;
+
+    const user = await this.real.findById(id); // Delegate to real
+    if (user) this.cache.set(id, { user, expiry: Date.now() + this.ttlMs });
+    return user;
+  }
+}
+```
+
 ### 10. Composite
 
 **Problem:** Tree structures where leaves and branches are treated uniformly.
 
-**When to Use:** UI component trees, file systems, org charts.
+**When to Use:** UI component trees, file systems, org charts, permission trees.
+
+**TypeScript Example:**
+```typescript
+interface FileSystemNode {
+  name: string;
+  getSize(): number;
+}
+
+class File implements FileSystemNode {
+  constructor(public name: string, private size: number) {}
+  getSize() { return this.size; }
+}
+
+class Directory implements FileSystemNode {
+  private children: FileSystemNode[] = [];
+  constructor(public name: string) {}
+
+  add(node: FileSystemNode) { this.children.push(node); }
+  getSize(): number {
+    return this.children.reduce((sum, child) => sum + child.getSize(), 0);
+  }
+}
+
+// Usage
+const root = new Directory("src");
+const lib = new Directory("lib");
+lib.add(new File("utils.ts", 1200));
+lib.add(new File("prisma.ts", 400));
+root.add(lib);
+root.add(new File("index.ts", 300));
+console.log(root.getSize()); // 1900
+```
 
 ### 11. Bridge
 
@@ -261,11 +427,60 @@ function withRateLimit(limit: number, next: Middleware): Middleware {
 
 **When to Use:** Cross-platform rendering, multiple DB drivers.
 
+**TypeScript Example:**
+```typescript
+// Abstraction
+interface MessageSender {
+  send(to: string, body: string): Promise<void>;
+}
+
+// Implementations
+class SmsSender implements MessageSender {
+  async send(to: string, body: string) { /* Twilio */ }
+}
+class EmailSender implements MessageSender {
+  async send(to: string, body: string) { /* SendGrid */ }
+}
+
+// Bridge: Notification type × Delivery method
+class OrderNotification {
+  constructor(private sender: MessageSender) {}
+  async notify(userId: string, orderId: string) {
+    await this.sender.send(userId, `Order ${orderId} confirmed`);
+  }
+}
+
+// Swap delivery without changing notification logic
+new OrderNotification(new SmsSender());
+new OrderNotification(new EmailSender());
+```
+
 ### 12. Flyweight
 
 **Problem:** Large number of similar objects consuming memory.
 
-**When to Use:** Game entities, document character rendering.
+**When to Use:** Game entities, document character rendering, icon libraries.
+
+**TypeScript Example:**
+```typescript
+class IconFlyweight {
+  private static cache = new Map<string, IconFlyweight>();
+  private constructor(public readonly svg: string) {}
+
+  static get(name: string): IconFlyweight {
+    if (!this.cache.has(name)) {
+      const svg = loadSvgFromDisk(name); // Expensive I/O
+      this.cache.set(name, new IconFlyweight(svg));
+    }
+    return this.cache.get(name)!;
+  }
+}
+
+// 1000 buttons, but only 5 unique SVGs loaded
+const icon1 = IconFlyweight.get("check"); // Loads from disk
+const icon2 = IconFlyweight.get("check"); // Returns cached
+console.log(icon1 === icon2); // true — same instance
+```
 
 ---
 
@@ -307,11 +522,73 @@ class OrderService:
 
 **When to Use:** Event systems, real-time updates, pub/sub.
 
+**TypeScript Example:**
+```typescript
+type EventHandler<T = unknown> = (data: T) => void;
+
+class EventBus {
+  private listeners = new Map<string, Set<EventHandler>>();
+
+  on<T>(event: string, handler: EventHandler<T>) {
+    if (!this.listeners.has(event)) this.listeners.set(event, new Set());
+    this.listeners.get(event)!.add(handler as EventHandler);
+    return () => this.listeners.get(event)?.delete(handler as EventHandler); // Unsubscribe
+  }
+
+  emit<T>(event: string, data: T) {
+    this.listeners.get(event)?.forEach(fn => fn(data));
+  }
+}
+
+// Usage
+const bus = new EventBus();
+bus.on<{ orderId: string }>("order.placed", (data) => {
+  console.log(`Send email for order ${data.orderId}`);
+});
+bus.on<{ orderId: string }>("order.placed", (data) => {
+  console.log(`Update inventory for order ${data.orderId}`);
+});
+bus.emit("order.placed", { orderId: "ord-123" });
+```
+
 ### 15. Command
 
 **Problem:** Need to encapsulate actions as objects.
 
 **When to Use:** Undo/redo, job queues, macro recording, transaction scripts.
+
+**TypeScript Example:**
+```typescript
+interface Command {
+  execute(): void;
+  undo(): void;
+}
+
+class AddItemCommand implements Command {
+  constructor(private cart: Cart, private item: CartItem) {}
+  execute() { this.cart.add(this.item); }
+  undo() { this.cart.remove(this.item.id); }
+}
+
+class CommandHistory {
+  private history: Command[] = [];
+
+  execute(cmd: Command) {
+    cmd.execute();
+    this.history.push(cmd);
+  }
+
+  undo() {
+    const cmd = this.history.pop();
+    cmd?.undo();
+  }
+}
+
+// Usage
+const history = new CommandHistory();
+history.execute(new AddItemCommand(cart, { id: "1", name: "Laptop", qty: 1 }));
+history.undo(); // Laptop removed
+```
 
 ### 16. Template Method
 
@@ -319,11 +596,63 @@ class OrderService:
 
 **When to Use:** ETL pipelines, test fixtures, report generators.
 
+**Python Example:**
+```python
+from abc import ABC, abstractmethod
+
+class DataPipeline(ABC):
+    def run(self):
+        data = self.extract()       # Step 1: fixed interface
+        transformed = self.transform(data)  # Step 2: varies
+        self.load(transformed)      # Step 3: fixed interface
+
+    @abstractmethod
+    def extract(self) -> list: ...
+    @abstractmethod
+    def transform(self, data: list) -> list: ...
+    @abstractmethod
+    def load(self, data: list) -> None: ...
+
+class CsvToPostgresPipeline(DataPipeline):
+    def extract(self): return read_csv("data.csv")
+    def transform(self, data): return [clean(row) for row in data]
+    def load(self, data): postgres.bulk_insert(data)
+
+class ApiToS3Pipeline(DataPipeline):
+    def extract(self): return fetch_api("/users")
+    def transform(self, data): return [enrich(row) for row in data]
+    def load(self, data): s3.upload_json(data)
+```
+
 ### 17. Iterator
 
 **Problem:** Traverse a collection without exposing its structure.
 
 **When to Use:** Custom data structures, paginated API results.
+
+**TypeScript Example:**
+```typescript
+class PaginatedIterator<T> {
+  private page = 0;
+  private done = false;
+
+  constructor(private fetchPage: (page: number) => Promise<T[]>) {}
+
+  async *[Symbol.asyncIterator]() {
+    while (!this.done) {
+      const items = await this.fetchPage(this.page++);
+      if (items.length === 0) { this.done = true; break; }
+      for (const item of items) yield item;
+    }
+  }
+}
+
+// Usage — iterate through ALL pages transparently
+const users = new PaginatedIterator((p) => fetchUsers({ page: p, limit: 50 }));
+for await (const user of users) {
+  console.log(user.name); // auto-fetches next page when needed
+}
+```
 
 ### 18. State
 
@@ -331,11 +660,67 @@ class OrderService:
 
 **When to Use:** Order status, workflow engines, UI state machines.
 
+**TypeScript Example:**
+```typescript
+interface OrderState {
+  cancel(order: Order): void;
+  ship(order: Order): void;
+}
+
+class PendingState implements OrderState {
+  cancel(order: Order) { order.setState(new CancelledState()); }
+  ship(order: Order) { order.setState(new ShippedState()); }
+}
+
+class ShippedState implements OrderState {
+  cancel() { throw new Error("Cannot cancel shipped order"); }
+  ship() { throw new Error("Already shipped"); }
+}
+
+class CancelledState implements OrderState {
+  cancel() { throw new Error("Already cancelled"); }
+  ship() { throw new Error("Cannot ship cancelled order"); }
+}
+
+class Order {
+  private state: OrderState = new PendingState();
+  setState(s: OrderState) { this.state = s; }
+  cancel() { this.state.cancel(this); }
+  ship() { this.state.ship(this); }
+}
+```
+
 ### 19. Chain of Responsibility
 
 **Problem:** Multiple handlers, each decides to process or pass along.
 
 **When to Use:** Middleware pipelines, approval workflows, event bubbling.
+
+**TypeScript Example (Express-style middleware):**
+```typescript
+type Handler = (req: Request, next: () => void) => void;
+
+class Pipeline {
+  private handlers: Handler[] = [];
+
+  use(handler: Handler) { this.handlers.push(handler); return this; }
+
+  execute(req: Request) {
+    let i = 0;
+    const next = () => {
+      if (i < this.handlers.length) this.handlers[i++](req, next);
+    };
+    next();
+  }
+}
+
+// Usage
+new Pipeline()
+  .use((req, next) => { console.log("Auth check"); next(); })
+  .use((req, next) => { console.log("Rate limit"); next(); })
+  .use((req, next) => { console.log("Handle request"); })
+  .execute(request);
+```
 
 ### 20. Mediator
 
@@ -343,11 +728,64 @@ class OrderService:
 
 **When to Use:** Chat rooms, air traffic control, form validation orchestration.
 
+**TypeScript Example:**
+```typescript
+class FormMediator {
+  private fields = new Map<string, FormField>();
+
+  register(field: FormField) {
+    this.fields.set(field.name, field);
+    field.setMediator(this);
+  }
+
+  notify(sender: string, event: string) {
+    if (sender === "country" && event === "change") {
+      const city = this.fields.get("city")!;
+      city.reset();                  // Clear city when country changes
+      city.loadOptionsFor(this.fields.get("country")!.value);
+    }
+    if (sender === "shipping" && event === "change") {
+      const billing = this.fields.get("billingAddress")!;
+      billing.syncWith(this.fields.get("shipping")!.value);
+    }
+  }
+}
+```
+
 ### 21. Memento
 
 **Problem:** Need to save and restore object state.
 
 **When to Use:** Undo functionality, game save states, form drafts.
+
+**TypeScript Example:**
+```typescript
+interface EditorSnapshot {
+  content: string;
+  cursor: number;
+  timestamp: number;
+}
+
+class TextEditor {
+  content = "";
+  cursor = 0;
+
+  save(): EditorSnapshot {
+    return { content: this.content, cursor: this.cursor, timestamp: Date.now() };
+  }
+
+  restore(snapshot: EditorSnapshot) {
+    this.content = snapshot.content;
+    this.cursor = snapshot.cursor;
+  }
+}
+
+class History {
+  private snapshots: EditorSnapshot[] = [];
+  push(s: EditorSnapshot) { this.snapshots.push(s); }
+  pop(): EditorSnapshot | undefined { return this.snapshots.pop(); }
+}
+```
 
 ### 22. Visitor
 
@@ -355,8 +793,63 @@ class OrderService:
 
 **When to Use:** AST processing, report generation across different node types.
 
+**TypeScript Example:**
+```typescript
+interface ASTNode {
+  accept(visitor: ASTVisitor): void;
+}
+
+class NumberNode implements ASTNode {
+  constructor(public value: number) {}
+  accept(visitor: ASTVisitor) { visitor.visitNumber(this); }
+}
+
+class BinaryOpNode implements ASTNode {
+  constructor(public op: string, public left: ASTNode, public right: ASTNode) {}
+  accept(visitor: ASTVisitor) { visitor.visitBinaryOp(this); }
+}
+
+interface ASTVisitor {
+  visitNumber(node: NumberNode): void;
+  visitBinaryOp(node: BinaryOpNode): void;
+}
+
+class PrintVisitor implements ASTVisitor {
+  visitNumber(n: NumberNode) { process.stdout.write(String(n.value)); }
+  visitBinaryOp(n: BinaryOpNode) {
+    n.left.accept(this);
+    process.stdout.write(` ${n.op} `);
+    n.right.accept(this);
+  }
+}
+```
+
 ### 23. Interpreter
 
 **Problem:** Need to evaluate a language or expression.
 
 **When to Use:** DSLs, rule engines, math expression parsers.
+
+**Python Example:**
+```python
+class Expression:
+    def interpret(self, context: dict) -> bool: ...
+
+class Equals(Expression):
+    def __init__(self, field: str, value):
+        self.field = field
+        self.value = value
+    def interpret(self, ctx: dict) -> bool:
+        return ctx.get(self.field) == self.value
+
+class And(Expression):
+    def __init__(self, *exprs: Expression):
+        self.exprs = exprs
+    def interpret(self, ctx: dict) -> bool:
+        return all(e.interpret(ctx) for e in self.exprs)
+
+# Usage: DSL for filtering
+rule = And(Equals("role", "admin"), Equals("active", True))
+rule.interpret({"role": "admin", "active": True})  # True
+rule.interpret({"role": "user", "active": True})   # False
+```
