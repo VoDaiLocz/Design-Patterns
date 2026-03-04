@@ -31,7 +31,8 @@ describe("NotificationFactory", () => {
   });
 
   it("throws for unknown type", () => {
-    expect(() => createNotification("pigeon" as any)).toThrow();
+    // @ts-expect-error — testing runtime rejection of an invalid type
+    expect(() => createNotification("pigeon")).toThrow();
   });
 });
 ```
@@ -172,7 +173,7 @@ describe("Middleware Decorators", () => {
   });
 
   it("withRateLimit blocks after limit", async () => {
-    const handler = withRateLimit(2, async () => new Response("OK"));
+    const handler = withRateLimit(2, 60_000, async () => new Response("OK"));
     const req = new Request("http://test.com");
     await handler(req);  // 1
     await handler(req);  // 2

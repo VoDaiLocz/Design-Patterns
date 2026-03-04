@@ -58,10 +58,12 @@ src/
 ```typescript
 // app/api/users/route.ts — Controller (THIN)
 import { UserService } from "@/services/user.service";
+import { CreateUserSchema } from "@/types/user.types";
 
 export async function POST(req: Request) {
   const body = await req.json();
-  const result = await UserService.create(body);
+  const validated = CreateUserSchema.parse(body); // ← validate before passing to service
+  const result = await UserService.create(validated);
   return Response.json(result, { status: 201 });
 }
 
