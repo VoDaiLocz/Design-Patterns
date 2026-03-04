@@ -1,0 +1,186 @@
+# Design Patterns ⚡
+
+> An agentic AI skill that scans your codebase, detects architectural debt, and generates production-ready refactored code using professional design patterns.
+
+## How It Works
+
+When you invoke `/design-patterns`, it doesn't lecture you about theory. It runs a **4-phase process** on your actual code:
+
+```
+DETECT → DIAGNOSE → DESIGN → DELIVER
+```
+
+1. **Detect** — Scans your file tree, maps imports, scores complexity, generates a "Heat Map" of architectural debt.
+2. **Diagnose** — Classifies anti-patterns (God Object, Logic Leakage, Tight Coupling) with file:line evidence.
+3. **Design** — Selects the optimal pattern from a 3-scale matrix (Code → Architecture → System).
+4. **Deliver** — Generates production-ready boilerplate code specific to your framework.
+
+Every recommendation comes with evidence. No pattern without pain.
+
+## The Iron Laws
+
+```
+1. NO PATTERN WITHOUT PAIN — Don't apply Factory just because textbooks say so.
+2. EVIDENCE BEFORE ELEGANCE — If current code works and is testable: LEAVE IT ALONE.
+3. INCREMENTAL OVER REVOLUTIONARY — One pattern, one module, one PR.
+```
+
+## Installation
+
+> Install once. Works across Claude Code, Cursor, Codex, and OpenCode.
+
+### Claude Code
+
+```
+/plugin marketplace add VoDaiLocz/design-patterns
+/plugin install design-patterns@design-patterns
+```
+
+### Cursor
+
+```
+/plugin-add design-patterns
+```
+
+### Codex
+
+```
+Fetch and follow instructions from https://raw.githubusercontent.com/VoDaiLocz/Design-Patterns/main/.codex/INSTALL.md
+```
+
+### OpenCode
+
+```
+Fetch and follow instructions from https://raw.githubusercontent.com/VoDaiLocz/Design-Patterns/main/.opencode/INSTALL.md
+```
+
+### Manual (Antigravity / Gemini)
+
+```bash
+cp -r skills/design-patterns/ ~/.gemini/antigravity/skills/design-patterns/
+```
+
+## Usage
+
+```
+/design-patterns <target>
+```
+
+**Examples:**
+```
+/design-patterns src/api/users         → Analyze specific module
+/design-patterns "order processing"    → Analyze a feature
+/design-patterns                       → Analyze entire project
+```
+
+## Example Output
+
+**Input:** `/design-patterns src/api/routes.ts`
+
+```markdown
+## 📊 Architecture Health Score: 7/20
+
+## 🔍 Detected Anti-Patterns
+| # | Anti-Pattern      | File:Line           | Severity | Evidence                              |
+|---|-------------------|---------------------|----------|---------------------------------------|
+| 1 | Logic Leakage     | src/api/routes.ts:45| 🔴 High  | DB query inside route handler         |
+| 2 | God Object        | src/api/routes.ts   | 🔴 High  | 450 lines, 12 functions, mixed logic  |
+| 3 | Tight Coupling    | src/api/routes.ts:12| 🟡 Med   | Direct PrismaClient import            |
+
+## 💡 Recommended Patterns
+| Anti-Pattern   | → Pattern        | Scale        | Impact    |
+|---------------|------------------|--------------|-----------|
+| Logic Leakage | Service Layer    | Architecture | 3 files   |
+| God Object    | SRP + Strategy   | Code         | 4 files   |
+| Tight Coupling| Repository       | Architecture | 2 files   |
+
+## 🏗️ Implementation Plan
+Step 1: Create UserService, extract business logic from routes.ts
+Step 2: Create UserRepository, move all Prisma calls
+Step 3: Create OrderService + OrderRepository
+Step 4: Thin routes.ts to HTTP-only controller
+
+## 📝 Generated Code
+[Framework-specific boilerplate for Next.js/FastAPI/NestJS...]
+```
+
+## What's Inside
+
+### 3-Scale Pattern Coverage
+
+| Scale | Patterns | Reference |
+|-------|----------|-----------|
+| 🔬 **Code-Level** | 23 GoF Patterns + 5 SOLID Principles | `references/code-patterns.md` |
+| 🏗️ **Architecture** | Clean, Hexagonal, DDD, CQRS, Service Layer, Repository | `references/architecture-patterns.md` |
+| 🌐 **System** | Microservices, Event-Driven, Circuit Breaker, Saga, API Gateway | `references/system-patterns.md` |
+
+### Framework-Specific Implementations
+
+| Framework | Architecture | Key Patterns |
+|-----------|-------------|-------------|
+| **Next.js** | App Router + Service Layer + Repository | Server Components, Server Actions, Middleware Decorator |
+| **FastAPI** | Router + Service + Repository via `Depends()` | DI, Strategy, Background Tasks Observer |
+| **NestJS** | Modules + DDD-ready structure | Built-in DI, CQRS, Guards/Interceptors |
+| **Django** | Apps + Service Layer (beyond MTV) | Fat Services over Fat Models |
+| **Express** | Routes + Controllers + Services + Repositories | Middleware Chain of Responsibility |
+| **Go** | cmd/internal structure + Interface-based DI | Repository interfaces, Handler pattern |
+
+### Complexity Scoring
+
+Every module is rated on 4 dimensions (max 20):
+
+| Score | Status | Action |
+|-------|--------|--------|
+| 4-8 | ✅ Healthy | No action needed |
+| 9-13 | 🟡 Moderate | Plan refactor next sprint |
+| 14-17 | 🔴 High debt | Refactor before adding features |
+| 18-20 | 🚨 Critical | Stop feature work, refactor NOW |
+
+## Philosophy
+
+- **No Pattern Without Pain** — Show the exact line where architecture fails
+- **Evidence Before Elegance** — Measure complexity, don't guess
+- **Incremental Over Revolutionary** — One pattern, one module, one PR
+- **Testability First** — If the new pattern is harder to test, it's a BAD pattern
+- **Scale Matters** — Clean Architecture for a TODO app is a war crime
+
+## File Structure
+
+```
+.claude-plugin/
+├── plugin.json              # Claude Code plugin manifest
+└── marketplace.json         # Claude Code marketplace config
+
+.cursor-plugin/
+└── plugin.json              # Cursor plugin manifest
+
+.codex/
+└── INSTALL.md               # Codex installation guide
+
+.opencode/
+└── INSTALL.md               # OpenCode installation guide
+
+commands/
+└── design-patterns.md       # /design-patterns slash command
+
+skills/design-patterns/
+├── SKILL.md                 # Main skill — 4D Process, Iron Laws, scoring
+└── references/
+    ├── code-patterns.md     # 23 GoF + 5 SOLID with code examples
+    ├── architecture-patterns.md  # Clean, Hexagonal, DDD, CQRS
+    ├── system-patterns.md   # Microservices, Event-Driven, Cloud
+    └── framework-catalog.md # Next.js, FastAPI, NestJS, Django, Express, Go
+
+RELEASE-NOTES.md
+```
+
+## Contributing
+
+1. Fork this repository
+2. Create a branch
+3. Follow the skill format in `skills/design-patterns/SKILL.md`
+4. Submit a PR
+
+## License
+
+MIT

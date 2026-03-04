@@ -1,0 +1,24 @@
+{
+    "name": "design-patterns",
+    "description": "Full-spectrum design patterns skill: Detect anti-patterns, diagnose architectural debt, and generate production-ready refactored code. Covers GoF, SOLID, Clean Architecture, DDD, CQRS, Microservices, and Cloud patterns.",
+    "version": "1.0.0",
+    "author": {
+        "name": "VoDaiLocz",
+        "url": "https://github.com/VoDaiLocz"
+    },
+    "homepage": "https://github.com/VoDaiLocz/Design-Patterns",
+    "repository": "https://github.com/VoDaiLocz/Design-Patterns",
+    "license": "MIT",
+    "keywords": [
+        "design-patterns",
+        "architecture",
+        "GoF",
+        "SOLID",
+        "DDD",
+        "CQRS",
+        "microservices",
+        "refactoring",
+        "agentic",
+        "skills"
+    ]
+}

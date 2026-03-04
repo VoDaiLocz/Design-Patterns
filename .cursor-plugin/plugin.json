@@ -1,0 +1,25 @@
+{
+    "name": "design-patterns",
+    "displayName": "Design Patterns",
+    "description": "Full-spectrum design patterns: scan code, detect anti-patterns, generate refactored code (GoF, SOLID, DDD, CQRS, Microservices)",
+    "version": "1.0.0",
+    "author": {
+        "name": "VoDaiLocz",
+        "url": "https://github.com/VoDaiLocz"
+    },
+    "homepage": "https://github.com/VoDaiLocz/Design-Patterns",
+    "repository": "https://github.com/VoDaiLocz/Design-Patterns",
+    "license": "MIT",
+    "keywords": [
+        "design-patterns",
+        "architecture",
+        "GoF",
+        "SOLID",
+        "DDD",
+        "CQRS",
+        "microservices",
+        "refactoring"
+    ],
+    "skills": "./skills/",
+    "commands": "./commands/"
+}
