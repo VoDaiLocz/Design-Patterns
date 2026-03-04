@@ -176,6 +176,67 @@ Abstract ALL data access behind a Repository interface.
 - Prototype / MVP (speed > architecture)
 - Solo developer project < 6 months
 
+### NestJS Example (Clean Architecture)
+
+```
+src/
+├── domain/                      ← Entities + Repository interfaces (innermost)
+│   ├── entities/user.entity.ts
+│   └── repositories/user.repository.interface.ts
+├── application/                 ← Use Cases (no framework imports)
+│   └── use-cases/create-user.use-case.ts
+├── infrastructure/              ← Framework + DB (outermost)
+│   ├── persistence/user.prisma.repository.ts
+│   └── controllers/user.controller.ts
+└── main.ts
+```
+
+```typescript
+// domain/entities/user.entity.ts — Pure business object, no framework imports
+// Note: crypto.randomUUID() is a Node.js 14.17+ / Web Crypto API built-in
+export class User {
+  constructor(
+    readonly id: string,
+    readonly email: string,
+    private passwordHash: string,
+  ) {}
+
+  static create(email: string, passwordHash: string): User {
+    return new User(crypto.randomUUID(), email, passwordHash);
+  }
+}
+
+// domain/repositories/user.repository.interface.ts — Port (interface only)
+export interface IUserRepository {
+  findByEmail(email: string): Promise<User | null>;
+  save(user: User): Promise<User>;
+}
+
+// application/use-cases/create-user.use-case.ts — Use Case, no DB knowledge
+import { IUserRepository } from "@/domain/repositories/user.repository.interface";
+
+export class CreateUserUseCase {
+  constructor(private repo: IUserRepository) {}
+
+  async execute(email: string, password: string): Promise<User> {
+    const exists = await this.repo.findByEmail(email);
+    if (exists) throw new Error("Email already taken");
+    const hash = await hashPassword(password);
+    return this.repo.save(User.create(email, hash));
+  }
+}
+
+// infrastructure/persistence/user.prisma.repository.ts — Adapter (outermost)
+export class UserPrismaRepository implements IUserRepository {
+  async findByEmail(email: string) {
+    return prisma.user.findUnique({ where: { email } });
+  }
+  async save(user: User) {
+    return prisma.user.create({ data: { id: user.id, email: user.email } });
+  }
+}
+```
+
 ---
 
 ## 4. Hexagonal Architecture (Ports & Adapters)
@@ -196,6 +257,57 @@ The application core defines "Ports" (interfaces). External systems connect via 
 - Multiple data sources (PostgreSQL + Redis + S3)
 - Need to swap infrastructure without touching core logic
 - Migrating from one framework to another
+
+### FastAPI Example (Hexagonal Architecture)
+
+```python
+# ports/user_repository_port.py — Interface (Port)
+from abc import ABC, abstractmethod
+
+class UserRepositoryPort(ABC):
+    @abstractmethod
+    async def find_by_email(self, email: str) -> "User | None": ...
+
+    @abstractmethod
+    async def save(self, user: "User") -> "User": ...
+
+# core/user_service.py — Application core (no framework imports)
+class UserService:
+    def __init__(self, repo: UserRepositoryPort):
+        self.repo = repo              # Depends on PORT, not concrete DB
+
+    async def register(self, email: str, password: str) -> "User":
+        existing = await self.repo.find_by_email(email)
+        if existing:
+            raise ValueError("Email already taken")
+        return await self.repo.save(User(email=email, password=hash_pw(password)))
+
+# adapters/postgres_user_repository.py — Adapter (right-side, driven)
+class PostgresUserRepository(UserRepositoryPort):
+    async def find_by_email(self, email: str):
+        return await database.users.find_one({"email": email})
+
+    async def save(self, user):
+        return await database.users.insert_one(user.dict())
+
+# adapters/in_memory_user_repository.py — Test adapter (swap for testing)
+class InMemoryUserRepository(UserRepositoryPort):
+    def __init__(self):
+        self._store: dict[str, User] = {}
+
+    async def find_by_email(self, email: str):
+        return self._store.get(email)
+
+    async def save(self, user):
+        self._store[user.email] = user
+        return user
+
+# routers/user_router.py — Adapter (left-side, driving)
+@router.post("/users")
+async def create_user(data: CreateUserDTO, repo: UserRepositoryPort = Depends(get_repo)):
+    service = UserService(repo)           # Inject adapter into core
+    return await service.register(data.email, data.password)
+```
 
 ---
 

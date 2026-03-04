@@ -88,7 +88,9 @@ function processOrder(data: any) {
 **Detection:**
 ```bash
 # Check how many files change together in recent commits
-git log --oneline --name-only -20 | # shows which files change together
+git log --oneline --name-only -20 | grep -v "^[a-f0-9]\{7\}" | sort | uniq -c | sort -rn | head -20
+# Find duplicated logic across files
+grep -rn "function validateEmail\|def validate_email\|validateEmail" src/ --include="*.ts" --include="*.py"
 ```
 
 **Symptoms:**

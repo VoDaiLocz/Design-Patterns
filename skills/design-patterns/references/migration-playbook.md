@@ -297,6 +297,24 @@ Start with the module that has the FEWEST dependencies.
 // ❌ BAD:  orders/ directly imports users/user.service.ts
 ```
 
+### Rollback
+If the module boundary enforcement causes unexpected failures:
+```bash
+# Revert to flat structure (undo last N commits)
+git revert HEAD~N..HEAD
+# Or reset the specific tsconfig paths change
+git checkout HEAD~1 -- tsconfig.json
+npm test  # Verify green
+```
+
+### Verification Checkpoint
+```bash
+# Ensure no cross-module direct imports remain
+npx madge --circular src/modules/
+# Confirm all module tests pass
+npm test -- --testPathPattern=modules
+```
+
 ---
 
 ## Migration 5: Modular Monolith → Microservices
@@ -350,6 +368,29 @@ Week 4: Remove old code from monolith
 ```
 
 **Step 6: Repeat** for next least-coupled module.
+
+### Rollback
+Microservice extraction rollback requires routing traffic back to the monolith:
+```bash
+# Step 1: In API Gateway — re-route traffic back to monolith
+# nginx/gateway.conf: proxy_pass to monolith instead of new service
+
+# Step 2: Keep new service running in shadow mode until fully reverted
+# Step 3: Once monolith handles 100% traffic, shut down new service
+# Step 4: Revert data migration if tables were moved
+pg_dump notifications_service_db > backup.sql
+# Restore to monolith DB if needed
+psql monolith_db < backup.sql
+```
+
+### Verification Checkpoint
+```bash
+# After each traffic shift
+curl https://api.example.com/health           # Gateway healthy
+curl https://api.example.com/api/users        # Monolith endpoints healthy
+curl https://notifications-service/health     # New service healthy (if canary)
+# Monitor error rate: should stay < 0.1%
+```
 
 ---
 
