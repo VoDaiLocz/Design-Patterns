@@ -282,6 +282,50 @@ Phase 3: /api/users + /api/orders → New
 Phase N: 100% traffic → New, Legacy decommissioned
 ```
 
+
+---
+
+## 9. Event Sourcing Pattern
+
+### Problem
+Auditability and temporal debugging are hard when you only store the latest row state.
+
+### Solution
+Persist immutable domain events as the source of truth, and rebuild state from the event stream.
+
+### When to Use
+- Need full audit history (fintech, compliance-heavy domains)
+- Need time-travel debugging ("what did we know at T1?")
+- Complex domain workflows where replay is valuable
+
+### Trade-offs
+- Higher implementation complexity than CRUD
+- Requires event versioning strategy
+- Read models usually need separate projections
+
+---
+
+## 10. Transactional Outbox Pattern
+
+### Problem
+Dual-write risk: write DB row succeeds, publish event fails (or vice versa) causing inconsistency.
+
+### Solution
+Write business data and outbox record in ONE local transaction, then publish asynchronously from the outbox.
+
+### Minimal Flow
+```
+1) Begin transaction
+2) Write business entity (e.g., order)
+3) Write outbox event row (e.g., order.created)
+4) Commit
+5) Outbox worker publishes event and marks row as sent
+```
+
+### Why It Matters
+Outbox is the default reliability companion for Event-Driven + Saga systems.
+
+
 ---
 
 ## Pattern Decision Matrix
@@ -295,3 +339,5 @@ Phase N: 100% traffic → New, Legacy decommissioned
 | Legacy migration | Strangler Fig | Medium | Any |
 | Cross-cutting concerns | Sidecar | Medium | 3+ |
 | Monolith too big | Microservices | Very High | 8+ |
+| Need full audit trail + replay | Event Sourcing | High | 5+ |
+| Reliable DB + event publication | Transactional Outbox | Medium | 3+ |

@@ -119,8 +119,8 @@ Step 4: Thin routes.ts to HTTP-only controller
 | Capability | Reference |
 |------------|----------|
 | 🧪 **Testing Patterns** — How to test every pattern | `references/testing-patterns.md` |
-| 🚫 **Anti-Patterns Catalog** — 15 code smells with detection & cures | `references/anti-patterns.md` |
-| 🔄 **Migration Playbook** — 5 step-by-step refactoring guides | `references/migration-playbook.md` |
+| 🚫 **Anti-Patterns Catalog** — 17 code smells with detection & cures | `references/anti-patterns.md` |
+| 🔄 **Migration Playbook** — 6 step-by-step refactoring guides | `references/migration-playbook.md` |
 | 📄 **Output Formats** — ADR, Health Check, Comparison Matrix | `references/output-format.md` |
 
 ### Framework-Specific Implementations
@@ -180,8 +180,8 @@ skills/design-patterns/
     ├── system-patterns.md        # Microservices, Event-Driven, Cloud
     ├── framework-catalog.md      # Next.js, FastAPI, NestJS, Django, Express, Go
     ├── testing-patterns.md       # ✨ NEW — Unit/Integration/E2E test code
-    ├── anti-patterns.md          # ✨ NEW — 15 anti-patterns with detection
-    ├── migration-playbook.md     # ✨ NEW — 5 migration guides
+    ├── anti-patterns.md          # ✨ NEW — 17 anti-patterns with detection
+    ├── migration-playbook.md     # ✨ NEW — 6 migration guides
     └── output-format.md          # ✨ NEW — ADR, Reports, Health Check
 
 RELEASE-NOTES.md

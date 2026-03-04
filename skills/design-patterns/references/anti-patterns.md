@@ -341,11 +341,31 @@ class Order {
 
 **Cure:** Start with Module Boundaries → Service Layer → Eventually Clean Architecture
 
+
+---
+
+### 13. N+1 Query Problem
+
+**Severity:** 🔴 High
+
+**Detection:** Repeated query pattern inside loops or ORM lazy-loading waterfalls.
+
+```typescript
+// 🔴 N+1: one query for orders + one query per order for items
+const orders = await prisma.order.findMany();
+for (const order of orders) {
+  order.items = await prisma.orderItem.findMany({ where: { orderId: order.id } });
+}
+```
+
+**Cure:** Eager loading (`include`/`select`), batching, and query-level aggregation.
+
+
 ---
 
 ## System-Level Anti-Patterns
 
-### 13. Distributed Monolith
+### 14. Distributed Monolith
 
 **Severity:** 🚨 Critical
 
@@ -361,7 +381,7 @@ class Order {
 
 ---
 
-### 14. Chatty Services
+### 15. Chatty Services
 
 **Severity:** 🔴 High
 
@@ -371,7 +391,7 @@ class Order {
 
 ---
 
-### 15. No Timeout / No Retry
+### 16. No Timeout / No Retry
 
 **Severity:** 🔴 High
 
@@ -421,3 +441,17 @@ Run this checklist on any module before refactoring:
 - [ ] Shared database between services?
 - [ ] Services that must deploy together?
 ```
+
+
+### 17. Dual Writes (DB + Event Bus without Outbox)
+
+**Severity:** 🚨 Critical
+
+**Detection:** Application writes DB and publishes message in separate non-atomic steps.
+
+**Symptoms:**
+- Order exists in DB but `order.created` event missing
+- Event published but DB transaction rolled back
+- Hard-to-reconcile states across services
+
+**Cure:** Transactional Outbox pattern with idempotent consumers.

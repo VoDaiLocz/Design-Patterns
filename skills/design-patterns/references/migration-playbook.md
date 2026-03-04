@@ -351,6 +351,69 @@ Week 4: Remove old code from monolith
 
 **Step 6: Repeat** for next least-coupled module.
 
+
+---
+
+## Migration 6: Direct Publish → Transactional Outbox
+
+**Difficulty:** ⭐⭐⭐⭐ (Advanced)
+**Time:** 2-5 days
+**Risk:** High (touches write path + async workers)
+
+### Problem Signature
+```typescript
+await orderRepo.save(order);               // DB write
+await eventBus.publish(new OrderCreated);  // separate write (can fail)
+```
+
+### Steps
+
+**Step 1: Add outbox table**
+```sql
+CREATE TABLE outbox_events (
+  id UUID PRIMARY KEY,
+  aggregate_type TEXT NOT NULL,
+  aggregate_id TEXT NOT NULL,
+  event_type TEXT NOT NULL,
+  payload JSONB NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  sent_at TIMESTAMPTZ
+);
+```
+
+**Step 2: Write business row + outbox row in one transaction**
+```typescript
+await prisma.$transaction(async (tx) => {
+  await tx.order.create({ data: orderData });
+  await tx.outboxEvent.create({
+    data: {
+      aggregateType: 'order',
+      aggregateId: orderData.id,
+      eventType: 'order.created',
+      payload: orderData,
+    },
+  });
+});
+```
+
+**Step 3: Add outbox publisher worker**
+- Poll pending rows in small batches
+- Publish to broker
+- Mark rows as sent
+- Retry with exponential backoff
+
+**Step 4: Make consumers idempotent**
+- Deduplicate by event ID
+- Store processed event IDs
+
+**Step 5: Verify**
+```bash
+# Simulate broker outage, ensure events remain in outbox pending state
+npm test
+```
+
+
 ---
 
 ## Migration Verification Checklist

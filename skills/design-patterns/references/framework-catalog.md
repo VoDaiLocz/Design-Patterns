@@ -5,6 +5,22 @@
 
 ---
 
+
+## Version Baseline (Validate Quarterly)
+
+> Keep examples aligned with actively maintained major versions.
+
+| Framework | Baseline in this catalog |
+|-----------|--------------------------|
+| Next.js | 15.x (App Router + Server Actions) |
+| FastAPI | 0.110+ (Pydantic v2 style) |
+| NestJS | 10.x+ |
+| Django | 5.x |
+| Express | 5.x |
+| Go | 1.22+ |
+
+---
+
 ## Next.js (App Router)
 
 ### Recommended Architecture

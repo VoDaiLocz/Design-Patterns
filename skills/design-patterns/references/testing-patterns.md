@@ -100,6 +100,7 @@ describe("EventBus", () => {
 describe("CommandHistory", () => {
   let history: CommandHistory;
   let cart: Cart;
+  const laptop: CartItem = { id: "1", name: "Laptop", qty: 1 };
 
   beforeEach(() => {
     history = new CommandHistory();
@@ -192,9 +193,11 @@ describe("Middleware Decorators", () => {
 **The Key:** Mock the Repository, test the Service logic.
 
 ```typescript
+import type { Mocked } from "vitest";
+
 describe("UserService", () => {
   let service: UserService;
-  let mockRepo: jest.Mocked<UserRepository>;
+  let mockRepo: Mocked<UserRepository>;
 
   beforeEach(() => {
     mockRepo = {
@@ -232,6 +235,7 @@ describe("UserRepository (Integration)", () => {
   beforeAll(async () => {
     // Use test database
     await prisma.$connect();
+    repo = new UserRepository(prisma);
   });
 
   afterEach(async () => {
@@ -256,15 +260,27 @@ describe("UserRepository (Integration)", () => {
 ```typescript
 // Command side — test business rules
 describe("CreateOrderHandler", () => {
+  let handler: CreateOrderHandler;
+  const mockRepo = { save: vi.fn() };
+  const mockEventBus = { publish: vi.fn() };
+
+  beforeEach(() => {
+    handler = new CreateOrderHandler(mockRepo, mockEventBus);
+  });
+
   it("validates stock before creating order", async () => {
-    const handler = new CreateOrderHandler(mockRepo, mockEventBus);
     await expect(handler.execute(new CreateOrderCommand("user-1", [
       { productId: "p-1", quantity: 999 }, // Exceeds stock
     ]))).rejects.toThrow("Insufficient stock");
   });
 
   it("publishes OrderCreated event", async () => {
+    const validCommand = new CreateOrderCommand("user-1", [
+      { productId: "p-1", quantity: 1 },
+    ]);
+
     await handler.execute(validCommand);
+
     expect(mockEventBus.publish).toHaveBeenCalledWith(
       expect.objectContaining({ type: "OrderCreated" })
     );
@@ -273,6 +289,13 @@ describe("CreateOrderHandler", () => {
 
 // Query side — test data retrieval
 describe("GetOrderSummaryHandler", () => {
+  let handler: GetOrderSummaryHandler;
+  const readDb = { query: vi.fn() };
+
+  beforeEach(() => {
+    handler = new GetOrderSummaryHandler(readDb);
+  });
+
   it("returns denormalized view", async () => {
     const result = await handler.execute(new GetOrderSummaryQuery("ord-1"));
     expect(result).toMatchObject({

@@ -244,6 +244,6 @@ Every design-patterns analysis MUST follow:
 - `references/system-patterns.md` — Microservices, Event-Driven, Circuit Breaker, Saga, Cloud patterns
 - `references/framework-catalog.md` — Pattern implementations for Next.js, FastAPI, NestJS, Django, Express, Go
 - `references/testing-patterns.md` — How to test every pattern (unit, integration, e2e) with real test code
-- `references/anti-patterns.md` — 15 anti-patterns catalog with detection commands, severities, and cures
-- `references/migration-playbook.md` — 5 step-by-step migration guides with verification checkpoints
+- `references/anti-patterns.md` — 17 anti-patterns catalog with detection commands, severities, and cures
+- `references/migration-playbook.md` — 6 step-by-step migration guides with verification checkpoints
 - `references/output-format.md` — ADR template, Refactoring Report, Health Check, Pattern Comparison
