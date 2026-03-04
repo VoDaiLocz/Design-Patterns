@@ -356,6 +356,7 @@ if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 **Python Example:**
 ```python
 # config.py — Thread-safe Singleton
+import os
 import threading
 
 class AppConfig:
