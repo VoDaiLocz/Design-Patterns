@@ -99,15 +99,20 @@ export class UserRepository {
 ```python
 # routers/user.py — Controller
 from fastapi import APIRouter, Depends
+from schemas.user import CreateUserDTO, User
 from services.user_service import UserService
 
 router = APIRouter()
 
-@router.post("/users", status_code=201)
+@router.post("/users", status_code=201, response_model=User)
 async def create_user(data: CreateUserDTO, service: UserService = Depends()):
     return await service.create(data)
 
 # services/user_service.py — Business Logic
+from fastapi import Depends, HTTPException
+from repositories.user_repository import UserRepository
+from utils.security import hash_password
+
 class UserService:
     def __init__(self, repo: UserRepository = Depends()):
         self.repo = repo
@@ -117,7 +122,7 @@ class UserService:
         if existing:
             raise HTTPException(409, "Email already exists")
         hashed = hash_password(data.password)
-        return await self.repo.save({**data.dict(), "password": hashed})
+        return await self.repo.save({**data.model_dump(), "password": hashed})
 
 # repositories/user_repository.py — Data Access
 class UserRepository:
