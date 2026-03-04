@@ -57,10 +57,11 @@ src/
 // app/actions/user.actions.ts
 "use server"
 import { UserService } from "@/services/user.service";
+import { CreateUserSchema } from "@/types/user.types";
 import { revalidatePath } from "next/cache";
 
 export async function createUser(formData: FormData) {
-  const data = Object.fromEntries(formData);
+  const data = CreateUserSchema.parse(Object.fromEntries(formData)); // ← validate first
   await UserService.create(data);
   revalidatePath("/dashboard/users");
 }

@@ -314,13 +314,19 @@ function withAuth(next: Middleware): Middleware {
   };
 }
 
-function withRateLimit(limit: number, next: Middleware): Middleware {
-  const counts = new Map<string, number>();
+function withRateLimit(limit: number, windowMs: number, next: Middleware): Middleware {
+  const windows = new Map<string, { count: number; resetAt: number }>();
   return async (req) => {
     const ip = req.headers.get("x-forwarded-for") ?? "unknown";
-    const current = counts.get(ip) ?? 0;
-    if (current >= limit) return new Response("Too Many Requests", { status: 429 });
-    counts.set(ip, current + 1);
+    const now = Date.now();
+    const w = windows.get(ip);
+    if (!w || w.resetAt <= now) {
+      windows.set(ip, { count: 1, resetAt: now + windowMs });
+    } else if (w.count >= limit) {
+      return new Response("Too Many Requests", { status: 429 });
+    } else {
+      w.count++;
+    }
     return next(req);
   };
 }
