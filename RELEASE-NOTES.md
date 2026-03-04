@@ -1,5 +1,20 @@
 # Design Patterns Release Notes
 
+## v1.1.0 (2026-03-04)
+
+### Added
+
+- **Testing Patterns** (`references/testing-patterns.md`) — Unit, integration, and E2E test code for every pattern category (GoF, Architecture, System)
+- **Anti-Patterns Catalog** (`references/anti-patterns.md`) — 15 anti-patterns with detection commands, severities, and cures
+- **Migration Playbook** (`references/migration-playbook.md`) — 5 step-by-step migration guides with verification checkpoints and rollback plans
+- **Output Formats** (`references/output-format.md`) — ADR template, Refactoring Report, Health Check, Pattern Comparison Matrix
+
+### Fixed
+
+- Builder pattern `build()` method now returns a copy to prevent shared-reference mutation
+
+---
+
 ## v1.0.0 (2026-03-04)
 
 ### Added

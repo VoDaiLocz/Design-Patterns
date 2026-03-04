@@ -317,7 +317,7 @@ class QueryBuilder {
   from(table: string) { this.query.table = table; return this; }
   where(condition: string) { this.query.conditions ??= []; this.query.conditions.push(condition); return this; }
   limit(n: number) { this.query.limit = n; return this; }
-  build(): Query { return this.query as Query; }
+  build(): Query { return { ...this.query } as Query; }
 }
 
 // Usage
