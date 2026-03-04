@@ -37,6 +37,51 @@ describe("NotificationFactory", () => {
 });
 ```
 
+### Testing Builder
+
+```typescript
+describe("QueryBuilder", () => {
+  it("builds a minimal query with only required fields", () => {
+    const query = new QueryBuilder().from("users").build();
+    expect(query.table).toBe("users");
+    expect(query.fields).toBeUndefined();
+    expect(query.limit).toBeUndefined();
+  });
+
+  it("builds a full query with all chained options", () => {
+    const query = new QueryBuilder()
+      .select(["id", "email"])
+      .from("users")
+      .where("active = true")
+      .limit(10)
+      .build();
+
+    expect(query.table).toBe("users");
+    expect(query.fields).toEqual(["id", "email"]);
+    expect(query.conditions).toContain("active = true");
+    expect(query.limit).toBe(10);
+  });
+
+  it("accumulates multiple where conditions", () => {
+    const query = new QueryBuilder()
+      .from("users")
+      .where("active = true")
+      .where("role = 'admin'")
+      .build();
+
+    expect(query.conditions).toHaveLength(2);
+  });
+
+  it("ensures build() does not mutate builder", () => {
+    const builder = new QueryBuilder().from("users").limit(5);
+    const q1 = builder.build();
+    const q2 = builder.limit(20).build();
+    expect(q1.limit).toBe(5);
+    expect(q2.limit).toBe(20);
+  });
+});
+```
+
 ### Testing Strategy
 
 ```typescript
@@ -149,6 +194,36 @@ describe("Order State Machine", () => {
     expect(() => order.ship()).toThrow("Cannot ship cancelled order");
   });
 });
+```
+
+### Testing Template Method
+
+```python
+# Python — pytest
+class TestDataPipeline:
+    def test_csv_pipeline_processes_all_rows(self, tmp_path):
+        # Write a temp CSV
+        csv_file = tmp_path / "data.csv"
+        csv_file.write_text("name,age\nAlice,30\nBob,25\n")
+
+        pipeline = CsvToPostgresPipeline(str(csv_file), mock_postgres)
+        pipeline.run()
+
+        assert mock_postgres.insert_count == 2
+
+    def test_api_pipeline_enriches_data(self, mock_api, mock_s3):
+        mock_api.return_value = [{"id": 1, "name": "Alice"}]
+
+        pipeline = ApiToS3Pipeline(mock_api, mock_s3)
+        pipeline.run()
+
+        uploaded = mock_s3.last_upload
+        assert uploaded[0].get("enriched") is True  # transform step ran
+
+    def test_pipeline_load_not_called_on_empty_extract(self, mock_postgres):
+        pipeline = CsvToPostgresPipeline("empty.csv", mock_postgres)
+        pipeline.run()
+        assert mock_postgres.insert_count == 0
 ```
 
 ### Testing Decorator (Middleware)
@@ -375,9 +450,12 @@ class TestOrderSaga:
 | Pattern | Unit Test | Integration Test | E2E Test |
 |---------|:---------:|:----------------:|:--------:|
 | Factory | ✅ Instance type check | — | — |
+| Abstract Factory | ✅ Family coherence | — | — |
+| Builder | ✅ Each option chain | — | — |
 | Strategy | ✅ Each strategy | ✅ With real data | — |
 | Observer | ✅ Emit + receive | ✅ Cross-module events | — |
 | Command | ✅ Execute + Undo | — | — |
+| Template Method | ✅ Each step override | ✅ Full pipeline | — |
 | State | ✅ All transitions | — | ✅ UI flows |
 | Service Layer | ✅ Mock repo | ✅ Real DB | ✅ API test |
 | Repository | — | ✅ Real DB | — |
@@ -394,9 +472,12 @@ tests/
 ├── unit/
 │   ├── patterns/
 │   │   ├── factory.test.ts
+│   │   ├── abstract-factory.test.ts
+│   │   ├── builder.test.ts
 │   │   ├── strategy.test.ts
 │   │   ├── observer.test.ts
 │   │   ├── command.test.ts
+│   │   ├── template-method.test.py
 │   │   └── state.test.ts
 │   └── services/
 │       ├── user.service.test.ts

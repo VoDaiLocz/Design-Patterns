@@ -25,21 +25,41 @@ Every recommendation comes with evidence. No pattern without pain.
 3. INCREMENTAL OVER REVOLUTIONARY — One pattern, one module, one PR.
 ```
 
+## Requirements
+
+This skill works with any of these AI coding tools:
+
+| Platform | Minimum Version |
+|----------|----------------|
+| Claude Code (Anthropic) | Any version supporting plugins |
+| Cursor | Any version supporting `.cursor` rules |
+| Codex (OpenAI) | Any version supporting instruction URLs |
+| OpenCode | Any version supporting `.opencode` |
+
+No dependencies to install. This is a pure prompt/instructions skill.
+
 ## Installation
 
 > Install once. Works across Claude Code, Cursor, Codex, and OpenCode.
 
 ### Claude Code
 
-```
+```bash
 /plugin marketplace add VoDaiLocz/design-patterns
 /plugin install design-patterns@design-patterns
 ```
 
 ### Cursor
 
-```
-/plugin-add design-patterns
+Copy the skill file into your project or global rules directory:
+
+```bash
+# Option A: Project-level (applies only to this project)
+cp -r skills/design-patterns/ .cursor/rules/design-patterns/
+
+# Option B: Clone and reference in Cursor settings → Rules → Add rule file
+git clone https://github.com/VoDaiLocz/Design-Patterns.git
+# Then add: skills/design-patterns/SKILL.md as a rule
 ```
 
 ### Codex
@@ -54,10 +74,12 @@ Fetch and follow instructions from https://raw.githubusercontent.com/VoDaiLocz/D
 Fetch and follow instructions from https://raw.githubusercontent.com/VoDaiLocz/Design-Patterns/main/.opencode/INSTALL.md
 ```
 
-### Manual (Antigravity / Gemini)
+### Manual (Any AI tool with file context)
 
 ```bash
+# Copy the skill folder anywhere your AI tool reads context from
 cp -r skills/design-patterns/ ~/.gemini/antigravity/skills/design-patterns/
+# Or attach SKILL.md directly as a context file in your AI tool
 ```
 
 ## Usage

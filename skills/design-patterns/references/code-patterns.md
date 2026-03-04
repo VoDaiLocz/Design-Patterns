@@ -93,17 +93,125 @@ class PremiumPricing:
 
 **Red Flag:** Subclass throws `NotImplementedError` on a parent method.
 
+**Before (violation):**
+```typescript
+class Rectangle {
+  constructor(protected width: number, protected height: number) {}
+  area() { return this.width * this.height; }
+  setWidth(w: number) { this.width = w; }
+  setHeight(h: number) { this.height = h; }
+}
+
+class Square extends Rectangle {
+  setWidth(w: number) { this.width = this.height = w; } // Violates LSP!
+  setHeight(h: number) { this.width = this.height = h; } // Callers of Rectangle are surprised
+}
+```
+
+**After (compliant):**
+```typescript
+interface Shape {
+  area(): number;
+}
+
+class Rectangle implements Shape {
+  constructor(private width: number, private height: number) {}
+  area() { return this.width * this.height; }
+}
+
+class Square implements Shape {
+  constructor(private side: number) {}
+  area() { return this.side * this.side; }
+}
+
+// Both are safely substitutable for Shape
+function printArea(shape: Shape) {
+  console.log(shape.area()); // Works for any Shape
+}
+```
+
 ### I — Interface Segregation Principle
 
 **Rule:** No client should be forced to depend on methods it does not use.
 
 **Red Flag:** Interface with 10+ methods where most implementors only use 3.
 
+**Before (violation):**
+```typescript
+// 🔴 Fat interface — Worker must implement irrelevant methods
+interface Worker {
+  work(): void;
+  eat(): void;    // Robots don't eat!
+  sleep(): void;  // Robots don't sleep!
+}
+
+class Robot implements Worker {
+  work() { /* ... */ }
+  eat() { throw new Error("Robots don't eat"); }  // Forced to implement
+  sleep() { throw new Error("Robots don't sleep"); } // Forced to implement
+}
+```
+
+**After (compliant):**
+```typescript
+// 🟢 Segregated interfaces — each client gets only what it needs
+interface Workable { work(): void; }
+interface Eatable  { eat(): void; }
+interface Sleepable { sleep(): void; }
+
+class Human implements Workable, Eatable, Sleepable {
+  work() { /* ... */ }
+  eat() { /* ... */ }
+  sleep() { /* ... */ }
+}
+
+class Robot implements Workable {
+  work() { /* ... */ }
+  // No forced empty methods
+}
+```
+
 ### D — Dependency Inversion Principle
 
 **Rule:** High-level modules should not depend on low-level modules. Both should depend on abstractions.
 
 **Red Flag:** `import { PrismaClient } from '@prisma/client'` directly in a service file.
+
+**Before (violation):**
+```typescript
+// 🔴 UserService is tightly coupled to Prisma
+import { PrismaClient } from "@prisma/client";
+
+class UserService {
+  private prisma = new PrismaClient(); // High-level depends on low-level
+
+  async findById(id: string) {
+    return this.prisma.user.findUnique({ where: { id } });
+  }
+}
+```
+
+**After (compliant):**
+```typescript
+// 🟢 Depend on abstraction, not implementation
+interface IUserRepository {
+  findById(id: string): Promise<User | null>;
+}
+
+class UserService {
+  constructor(private repo: IUserRepository) {} // Depends on interface
+
+  async findById(id: string) {
+    return this.repo.findById(id); // No Prisma knowledge here
+  }
+}
+
+// Swap out for tests:
+class InMemoryUserRepository implements IUserRepository {
+  private users = new Map<string, User>();
+  async findById(id: string) { return this.users.get(id) ?? null; }
+}
+```
 
 ---
 
@@ -148,6 +256,49 @@ function createNotification(type: "email" | "sms"): Notification {
 **Problem:** Families of related objects that must be used together.
 
 **When to Use:** UI theme systems (DarkButton + DarkInput + DarkCard).
+
+**TypeScript Example:**
+```typescript
+// Abstract products
+interface Button { render(): string; }
+interface Input  { render(): string; }
+
+// Concrete family: Light theme
+class LightButton implements Button { render() { return "<button class='light'>"; } }
+class LightInput  implements Input  { render() { return "<input class='light'>"; } }
+
+// Concrete family: Dark theme
+class DarkButton implements Button { render() { return "<button class='dark'>"; } }
+class DarkInput  implements Input  { render() { return "<input class='dark'>"; } }
+
+// Abstract factory
+interface UIFactory {
+  createButton(): Button;
+  createInput(): Input;
+}
+
+class LightThemeFactory implements UIFactory {
+  createButton() { return new LightButton(); }
+  createInput()  { return new LightInput(); }
+}
+
+class DarkThemeFactory implements UIFactory {
+  createButton() { return new DarkButton(); }
+  createInput()  { return new DarkInput(); }
+}
+
+// Usage — swap entire theme without changing rendering logic
+function renderForm(factory: UIFactory) {
+  const button = factory.createButton();
+  const input  = factory.createInput();
+  return `${input.render()} ${button.render()}`;
+}
+
+renderForm(new LightThemeFactory()); // Light UI
+renderForm(new DarkThemeFactory());  // Dark UI — zero code change
+```
+
+**Red Flag:** Abstract Factory for a single product family is overkill. Use Factory Method instead.
 
 ### 3. Builder
 
